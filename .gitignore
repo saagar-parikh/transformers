@@ -1,0 +1,6 @@
+__pycache__/
+data/
+coco_captioning/
+checkpoints/
+*.png
+*.zip

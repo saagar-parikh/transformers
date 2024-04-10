@@ -75,20 +75,20 @@ class MultiHeadAttentionLayer(AttentionLayer):
         #compute dot-product attention separately for each head. Don't forget the scaling value!
         #Expected shape of dot_product is (N, H, S, T)
         dot_product = torch.matmul(query, key.transpose(2, 3)) / math.sqrt(D // H)
-        print("mha dot_product shape", dot_product.shape)
+        # print("mha dot_product shape", dot_product.shape, N, H, S, T)
 
         if attn_mask is not None:
             # convert att_mask which is multiplicative, to an additive mask
             # Hint : If mask[i,j] = 0, we want softmax(QKT[i,j] + additive_mask[i,j]) to be 0
             # Think about what inputs make softmax 0.
             additive_mask = -1e9 * (1 - attn_mask)
-            dot_product += additive_mask
+            dot_product += additive_mask.to(dot_product.device)
         
         # apply softmax, dropout, and use value
-        y = torch.matmul(self.dropout(F.softmax(dot_product, dim=-1), value))
+        y = torch.matmul(self.dropout(F.softmax(dot_product, dim=-1)), value)
 
         # concat embeddings from different heads, and project
-        output = self.head_proj(output.reshape(N, S, D))
+        output = self.head_proj(y.reshape(N, S, D))
         return output
 
 
@@ -161,6 +161,9 @@ class FeedForwardBlock(nn.Module):
     def forward(self, seq):
          ############# TODO - MLP on the sequence. Add dropout to mlp layer output.
         # Then add a residual connection to the original input, and finally apply normalization. #############################
+        x = self.mlp(seq)
+        x = self.dropout(x)
+        out = self.norm(x + seq)
         return out
 
 class DecoderLayer(nn.Module):
