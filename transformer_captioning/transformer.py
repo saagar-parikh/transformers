@@ -68,9 +68,9 @@ class MultiHeadAttentionLayer(AttentionLayer):
         #project query, key and value
         #after projection, split the embedding across num_heads
         #eg - expected shape for value is (N, H, T, D/H)
-        query = self.head_proj(query).view(N, S, H, D // H).transpose(1, 2)
-        key = self.head_proj(key).view(N, T, H, D // H).transpose(1, 2)
-        value = self.head_proj(value).view(N, T, H, D // H).transpose(1, 2)
+        query = self.query_proj(query).view(N, S, H, D // H).transpose(1, 2)
+        key = self.key_proj(key).view(N, T, H, D // H).transpose(1, 2)
+        value = self.value_proj(value).view(N, T, H, D // H).transpose(1, 2)
 
         #compute dot-product attention separately for each head. Don't forget the scaling value!
         #Expected shape of dot_product is (N, H, S, T)
@@ -88,7 +88,7 @@ class MultiHeadAttentionLayer(AttentionLayer):
         y = torch.matmul(self.dropout(F.softmax(dot_product, dim=-1)), value)
 
         # concat embeddings from different heads, and project
-        output = self.head_proj(y.reshape(N, S, D))
+        output = self.head_proj(y.transpose(1, 2).contiguous().view(N, S, D))
         return output
 
 
